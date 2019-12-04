@@ -32,10 +32,10 @@ sub checkPassword{
     if($digit[$i] == $digit[$i-1]){
       # New requirement:
       # the two adjacent matching digits are not part of a larger group of matching digits
-      if( (defined($digit[$i]) && $digit[$i] != $digit[$i+1])
-        &&(defined($digit[$i-2]) && $digit[$i-1] != $digit[$i-2])){
-          $hasAdjacency = 1;
-        
+      if(defined($digit[$i+1]) && $digit[$i] == $digit[$i+1]){
+      } elsif (defined($digit[$i-2]) && $digit[$i-1] == $digit[$i-2]) {
+      } else {
+        $hasAdjacency = 1;
       }
     }
     if($digit[$i] < $digit[$i-1]){
