@@ -9,5 +9,5 @@ To run the code in batch:
 To run an individual unit test:
 
     cd t
-    perl 01.t
+    perl 01.t # or other .t file
 
