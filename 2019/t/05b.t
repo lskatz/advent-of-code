@@ -43,8 +43,8 @@ sub processIntCode{
     my $idxOut = $int[$i+3];
 
     # Values
-    my $int1   = $int[$idx1] || undef;
-    my $int2   = $int[$idx2] || undef;
+    my $int1   = $int[$idx1] || 0;
+    my $int2   = $int[$idx2] || 0;
 
     # Watch out for immediate mode
     if($opcode > 99){
@@ -87,7 +87,7 @@ sub processIntCode{
     # For example, the instruction 4,50 would output the
     # value at address 50.
     elsif($opcode == 4){
-      my $value = $int1;
+      my $value = $int1 || 0;
       if(!defined($value)){
         #BAIL_OUT(join(", ", $input, "pointer: $i numinstructions $numInstructions", "..", @int,"\n", @$intOriginal));
       }
