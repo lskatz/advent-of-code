@@ -14,25 +14,39 @@ while(<DATA>){
   $orbit{$sat} = $body;
 }
 
-my $totalOrbits = 0;
-for my $sat(keys(%orbit)){
-  my $numOrbits = countOrbits($sat, \%orbit);
-  note "$sat\t$numOrbits";
-  $totalOrbits += $numOrbits;
-}
-is($totalOrbits, 130681, "Total orbits should be 130681");
+# Find the "last common ancestor" between YOU and SAN
+my $lineageYOU = lineage("YOU", \%orbit);
+my $lineageSAN = lineage("SAN", \%orbit);
 
-sub countOrbits{
-  my ($origSat, $orbit) = @_;
-  my $numOrbits = 0;
-
-  my $sat = $origSat;
-
-  while(defined($orbit{$sat})){
-    $sat = $orbit{$sat};
-    $numOrbits++;
+my $lastCommonAncestor = "";
+my $stepsYOU = 0;
+my $stepsSAN = 0;
+TAXON_YOU:
+for(my $i=0;$i<@$lineageYOU;$i++){
+  for(my $j=0;$j<@$lineageSAN;$j++){
+    if($$lineageYOU[$i] eq $$lineageSAN[$j]){
+      $lastCommonAncestor = $$lineageYOU[$i];
+      # Subtract one to ignore self in the lineage count
+      $stepsYOU = $i - 1;
+      $stepsSAN = $j - 1;
+      last TAXON_YOU;
+    }
   }
-  return $numOrbits;
+}
+
+note $stepsYOU, " ", $stepsSAN . " LCA: $lastCommonAncestor";
+my $totalSteps = $stepsYOU + $stepsSAN;
+is($totalSteps, 313, "Total steps");
+
+sub lineage{
+  my ($sat, $orbit) = @_;
+  my @lineage = ($sat);
+
+  while(defined(my $parent = $$orbit{$sat})){
+    push(@lineage, $parent);
+    $sat = $parent;
+  }
+  return \@lineage;
 }
 
 __DATA__
@@ -1098,3 +1112,4 @@ GWM)4DR
 GDW)F7M
 DQR)P29
 89K)RHG
+
