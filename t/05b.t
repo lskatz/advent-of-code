@@ -4,18 +4,18 @@ use strict;
 use warnings;
 use Test::More tests=>6;
 
-# Try 1: 1111111111 too high
-# Try 2: 10 not right
-# Try 3: 1 is not right
-#
-
+# Loop through __DATA__
 while(my $inputOutput = <DATA>){
   my $intcode = <DATA>;
   last if(!$intcode);
-  chomp($inputOutput, $intcode);
+  chomp($inputOutput, $intcode); # remove newlines
   my($input,$expected) = split(/,/, $inputOutput);
   my @int = split(/,/,$intcode);
+
+  # Run the intcode through the machine
   my $diagnosticOutput = processIntCode(\@int, $input);
+
+  # Check against expected result
   is($diagnosticOutput, $expected, "Expected $expected for input $input");
 }
 
@@ -27,12 +27,17 @@ sub processIntCode{
 
   my $i=0;
   my $numInstructions = 0;
+
+  # The machine goes until the pointer reaches the end
   while($i < @int){
-    #note join(",", "pointer: $i ",@int);
+    # A catch in case we're about to go into an infinite loop
     if(++$numInstructions > 99999){
       BAIL_OUT("ERROR: number of instructions went to $numInstructions with input $input");
     }
+    # The opcode at pointer $i
     my $opcode = $int[$i];
+
+    # Exit with opcode 99
     if($opcode == 99){
       last;
     }
@@ -58,16 +63,21 @@ sub processIntCode{
         $int2 = $idx2;
       }
       if(substr($opcode, -5, 1) == 1){
+        # Not implemented yet
         ...;
       }
+      # The final two digits are the opcode
       $opcode = substr($opcode, -2, 2);
     }
 
+    # Opcode 1: addition
     if($opcode == 1){
       my $value = $int1 + $int2;
       $int[$idxOut] = $value;
       $i+=4;
-    } elsif($opcode == 2){
+    } 
+    # Opcode 2: multiplication
+    elsif($opcode == 2){
       my $value = $int1 * $int2;
       $int[$idxOut] = $value;
       $i+=4;
@@ -79,7 +89,6 @@ sub processIntCode{
     elsif($opcode == 3){
       my $value = $input;
       $idxOut = $idx1;
-      #note "  opcode:$opcode value:$value idxOut:$idxOut";
       $int[$idxOut] = $value;
       $i+=2;
     }
@@ -88,9 +97,6 @@ sub processIntCode{
     # value at address 50.
     elsif($opcode == 4){
       my $value = $int1 || 0;
-      if(!defined($value)){
-        #BAIL_OUT(join(", ", $input, "pointer: $i numinstructions $numInstructions", "..", @int,"\n", @$intOriginal));
-      }
       $diagnosticOutput = $value;
       note "Diagnostic output: $value";
       $i+=2;
@@ -139,6 +145,7 @@ sub processIntCode{
       }
       $i+=4;
     }
+    # Hopefully we don't end up with an unknown opcode but catch it just in case
     else{
       die "INTERNAL ERROR: unsure what to do with opcode $opcode";
     }
