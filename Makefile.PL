@@ -16,6 +16,8 @@ WriteMakefile(
   PREREQ_PM    => {
     # Core modules
     'Data::Dumper'   => 0,
+    # Other
+    'List::Permutor' => '0.022',
   },
   BUILD_REQUIRES => {
     'Test::More'     => 0.47,
