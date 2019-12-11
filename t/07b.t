@@ -13,11 +13,22 @@ while(my $intcode = <DATA>){
   last if(!$expected);
   chomp($intcode, $phasing, $expected);
   my @int = split(/,/,$intcode);
-  my @phase = split(/,/, $phasing);
-  # TODO permutator
+  my @phaseOriginal = split(/,/, $phasing);
 
-  my $thrust = thrustAmplifiersFeedback(\@int, \@phase);
-  is($thrust, $expected, "Phasing: @phase  Expected: $expected");
+  my $permutor = List::Permutor->new(@phaseOriginal);
+  my $maxThrust = 0;
+  while(my @phase = $permutor->next() ){
+    note "Phase: @phase";
+
+    my $thrust = thrustAmplifiersFeedback(\@int, \@phase);
+
+    if($thrust > $maxThrust){
+      $maxThrust = $thrust;
+    }
+
+    #note "DEBUG - breaking early"; last;
+  }
+  is($maxThrust, $expected, "Expected: $expected");
 }
 
 sub thrustAmplifiersFeedback{
@@ -27,18 +38,16 @@ sub thrustAmplifiersFeedback{
 
   my $input = 0;
   my $chainOutput = -1;
-  #while($input != $chainOutput){
-  while(1){
+  while($input != $chainOutput){
     for(my $i=0;$i<@phase;$i++){
       my @ampInput = ($phase[$i], $input);
-      diag "@ampInput";
       my $diagnosticOutput = processIntCode(\@int, \@ampInput);
       $input = $diagnosticOutput;
     }
+    last if($input == $chainOutput);
     $chainOutput = $input;
-    diag $chainOutput;
-    sleep 1;
   }
+  note "Phase @phase ===> $chainOutput";
   return $chainOutput;
 }
 
