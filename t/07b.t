@@ -6,6 +6,13 @@ use Test::More;
 use Data::Dumper;
 use List::Permutor;
 
+my $DEBUG=1;
+sub note{
+  if($DEBUG){
+    Test::More::note(@_);
+  }
+}
+
 # First line of data is the intcode
 while(my $intcode = <DATA>){
   my $phasing = <DATA>;
@@ -44,24 +51,31 @@ sub thrustAmplifiersFeedback{
     my @int = @$intOriginal;
 
     # Make the "struct"
-    $amp[$i]{int}     = \@int;
-    $amp[$i]{numints} = @int;
-    $amp[$i]{pointer} = 0;
+    $amp[$i] = {
+      int                 => \@int,
+      numints             => scalar(@int),
+      pointer             => 0,
+      instructionsCounter => 0,
+      input               => [$phase[$i]],
+    }
   }
 
   my $input = 0;
   my $chainOutput = -1;
   for(my $i=0;$i<@amp;$i++){
-    my @ampInput = ($phase[$i], $input);
-    my $diagnosticOutput = processIntCode($amp[$i], \@ampInput);
+    # Get the previous amp's output as the new input.
+    # If this is the first round with amp A, then the input is 0.
+    push(@{$amp[$i]{input}}, $input);
+    note "AMPLIFIER $i, p$amp[$i]{pointer}, input".join(",",@{$amp[$i]{input}});
+    my $diagnosticOutput = processIntCode($amp[$i]);
 
     if($i == @amp - 1){
       note "$input => $diagnosticOutput";
-      if($diagnosticOutput){
-        $i=0;
+      if(defined($diagnosticOutput)){
+        $i=-1; # ie reset the loop
       }
     }
-    $input += $diagnosticOutput;
+    $input = $diagnosticOutput;
   }
   die;
   note "Phase @phase ===> $chainOutput";
@@ -70,29 +84,24 @@ sub thrustAmplifiersFeedback{
 }
 
 sub processIntCode{
-  my($amp, $ampInputOriginal) = @_;
+  my($amp) = @_;
   
-  # avoid modifying by reference
-  my @ampInput = @$ampInputOriginal;
-
   my $diagnosticOutput = "";
 
-  my $i=$$amp{pointer};
-  my $numInstructions = 0;
-  while($i < $$amp{numints}){
-    #note join(",", "pointer: $i ",@int);
-    if(++$numInstructions > 99999){
-      BAIL_OUT("ERROR: number of instructions went to $numInstructions with input ".join(",",@$ampInputOriginal));
+  while($$amp{pointer} < $$amp{numints}){
+    note join(",", "p$$amp{pointer}",@{$$amp{int}});
+    if(++$$amp{instructionsCounter} > 99999){
+      BAIL_OUT("ERROR: number of instructions went to ".$$amp{instructionsCounter});
     }
-    my $opcode = $$amp{int}[$i];
+    my $opcode = $$amp{int}[$$amp{pointer}];
     if($opcode == 99){
-      last;
+      return undef;
     }
 
     # Indexes
-    my $idx1   = $$amp{int}[$i+1];
-    my $idx2   = $$amp{int}[$i+2];
-    my $idxOut = $$amp{int}[$i+3];
+    my $idx1   = $$amp{int}[$$amp{pointer}+1];
+    my $idx2   = $$amp{int}[$$amp{pointer}+2];
+    my $idxOut = $$amp{int}[$$amp{pointer}+3];
 
     # Values
     my $int1   = $$amp{int}[$idx1] || 0;
@@ -118,34 +127,35 @@ sub processIntCode{
     if($opcode == 1){
       my $value = $int1 + $int2;
       $$amp{int}[$idxOut] = $value;
-      $i+=4;
+      $$amp{pointer} +=4;
+      note "$opcode: Setting position $idxOut to $value ($int1+$int2) and moving 4 up to $$amp{pointer}";
     } elsif($opcode == 2){
       my $value = $int1 * $int2;
       $$amp{int}[$idxOut] = $value;
-      $i+=4;
+      $$amp{pointer} +=4;
+      note "$opcode: Setting position $idxOut to $value ($int1*$int2) and moving 4 up to $$amp{pointer}";
     }
     # Opcode 3 takes a single integer as input and saves
     # it to the position given by its only parameter. For
     # example, the instruction 3,50 would take an input
     # value and store it at address 50.
     elsif($opcode == 3){
-      my $value = shift(@ampInput);
+      my $value = shift(@{$$amp{input}});
       $idxOut = $idx1;
       #note "  opcode:$opcode value:$value idxOut:$idxOut";
       $$amp{int}[$idxOut] = $value;
-      $i+=2;
+      $$amp{pointer} +=2;
+      note "$opcode: Setting position $idxOut to $value and moving 2 up to $$amp{pointer}";
     }
     # Opcode 4 outputs the value of its only parameter. 
     # For example, the instruction 4,50 would output the
     # value at address 50.
     elsif($opcode == 4){
       my $value = $int1 || 0;
-      if(!defined($value)){
-        #BAIL_OUT(join(", ", $input, "pointer: $i numinstructions $numInstructions", "..", @int,"\n", @$intOriginal));
-      }
       $diagnosticOutput = $value;
-      #note "Diagnostic output: $value";
-      $i+=2;
+      $$amp{pointer} +=2;
+      note "$opcode: moving 2 up to $$amp{pointer} and returning diagnosticOutput=$diagnosticOutput";
+      return $diagnosticOutput;
     } 
     # Opcode 5 is jump-if-true: if the first parameter is non-zero,
     # it sets the instruction pointer to the value from
@@ -153,9 +163,11 @@ sub processIntCode{
     elsif($opcode == 5){
       if($int1 != 0){
         my $value = $int2;
-        $i = $value;
+        $$amp{pointer}  = $value;
+        note "$opcode: current int $int1 is true and setting pointer to $$amp{pointer}";
       } else {
-        $i+=3;
+        $$amp{pointer} +=3;
+        note "$opcode: current int $int1 is false and moving pointer up 3 to $$amp{pointer}";
       }
     }
     # Opcode 6 is jump-if-false: if the first parameter is zero, 
@@ -164,32 +176,39 @@ sub processIntCode{
     elsif($opcode == 6){
       if($int1 == 0){
         my $value = $int2;
-        $i = $value;
+        $$amp{pointer}  = $value;
+        note "$opcode: current int $int1 is false and setting pointer to $$amp{pointer}";
       } else {
-        $i+=3;
+        $$amp{pointer} +=3;
+        note "$opcode: current int $int1 is true and moving pointer up 3 to $$amp{pointer}";
       }
     }
     # Opcode 7 is less than: if the first parameter is less 
     # than the second parameter, it stores 1 in the position
     # given by the third parameter. Otherwise, it stores 0.
     elsif($opcode == 7){
+      my $value;
       if($int1 < $int2){
-        $$amp{int}[$idxOut] = 1;
+        $value = 1;
       } else {
-        $$amp{int}[$idxOut] = 0;
+        $value = 0;
       }
-      $i+=4;
+      $$amp{int}[$idxOut] = $value;
+      $$amp{pointer} +=4;
+      note "$opcode (less-than): $int1 <=> $int2 and therefore setting $idxOut = $value. Moving pointer up 4 to $$amp{pointer}";
     }
     # Opcode 8 is equals: if the first parameter is equal to
     # the second parameter, it stores 1 in the position given
     # by the third parameter. Otherwise, it stores 0.
     elsif($opcode == 8){
+      my $value;
       if($int1 == $int2){
-        $$amp{int}[$idxOut] = 1;
+        $value = 1;
       } else {
-        $$amp{int}[$idxOut] = 0;
+        $value = 0;
       }
-      $i+=4;
+      $$amp{pointer} +=4;
+      note "$opcode (equals): $int1 <=> $int2 and therefore setting $idxOut = $value. Moving pointer up 4 to $$amp{pointer}";
     }
     else{
       die "INTERNAL ERROR: unsure what to do with opcode $opcode";
