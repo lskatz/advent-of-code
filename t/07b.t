@@ -18,36 +18,42 @@ while(my $intcode = <DATA>){
   my $permutor = List::Permutor->new(@phaseOriginal);
   my $maxThrust = 0;
   while(my @phase = $permutor->next() ){
-    note "Phase: @phase";
-
     my $thrust = thrustAmplifiersFeedback(\@int, \@phase);
 
     if($thrust > $maxThrust){
       $maxThrust = $thrust;
     }
 
-    #note "DEBUG - breaking early"; last;
   }
   is($maxThrust, $expected, "Expected: $expected");
 }
 
 sub thrustAmplifiersFeedback{
   my($intOriginal, $phaseOriginal) =@_;
-  my @int   = @$intOriginal;
+  
+  # Copy the phase
   my @phase = @$phaseOriginal;
+
+  # Create amplifier "structs"
+  my %amp;
+  for my $amp("A".."E"){
+    # Make a copy of the intcode and then store the reference
+    $amp{$amp}{int} = [@$intOriginal];
+  }
 
   my $input = 0;
   my $chainOutput = -1;
-  while($input != $chainOutput){
-    for(my $i=0;$i<@phase;$i++){
+  for(my $i=0;$i<@phase;$i++){
+    for my $amp(keys(%amp)){
       my @ampInput = ($phase[$i], $input);
-      my $diagnosticOutput = processIntCode(\@int, \@ampInput);
+      my $diagnosticOutput = processIntCode($amp{$amp}{int}, \@ampInput);
       $input = $diagnosticOutput;
     }
     last if($input == $chainOutput);
     $chainOutput = $input;
   }
   note "Phase @phase ===> $chainOutput";
+  sleep 1;
   return $chainOutput;
 }
 
