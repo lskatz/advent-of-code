@@ -19,6 +19,7 @@ while(my $intcode = <DATA>){
   my $maxThrust = 0;
   while(my @phase = $permutor->next() ){
     my $thrust = thrustAmplifiersFeedback(\@int, \@phase);
+    ...;
 
     if($thrust > $maxThrust){
       $maxThrust = $thrust;
@@ -28,6 +29,8 @@ while(my $intcode = <DATA>){
   is($maxThrust, $expected, "Expected: $expected");
 }
 
+# Run through one set of 5 amplifiers until "E" gets an
+# exit code.
 sub thrustAmplifiersFeedback{
   my($intOriginal, $phaseOriginal) =@_;
   
@@ -35,57 +38,65 @@ sub thrustAmplifiersFeedback{
   my @phase = @$phaseOriginal;
 
   # Create amplifier "structs"
-  my %amp;
-  for my $amp("A".."E"){
-    # Make a copy of the intcode and then store the reference
-    $amp{$amp}{int} = [@$intOriginal];
+  my @amp;
+  for(my $i=0;$i<5;$i++){
+    # Make a copy of the intcode 
+    my @int = @$intOriginal;
+
+    # Make the "struct"
+    $amp[$i]{int}     = \@int;
+    $amp[$i]{numints} = @int;
+    $amp[$i]{pointer} = 0;
   }
 
   my $input = 0;
   my $chainOutput = -1;
-  for(my $i=0;$i<@phase;$i++){
-    for my $amp(keys(%amp)){
-      my @ampInput = ($phase[$i], $input);
-      my $diagnosticOutput = processIntCode($amp{$amp}{int}, \@ampInput);
-      $input = $diagnosticOutput;
+  for(my $i=0;$i<@amp;$i++){
+    my @ampInput = ($phase[$i], $input);
+    my $diagnosticOutput = processIntCode($amp[$i], \@ampInput);
+
+    if($i == @amp - 1){
+      note "$input => $diagnosticOutput";
+      if($diagnosticOutput){
+        $i=0;
+      }
     }
-    last if($input == $chainOutput);
-    $chainOutput = $input;
+    $input += $diagnosticOutput;
   }
+  die;
   note "Phase @phase ===> $chainOutput";
   sleep 1;
   return $chainOutput;
 }
 
 sub processIntCode{
-  my($intOriginal, $ampInputOriginal) = @_;
+  my($amp, $ampInputOriginal) = @_;
   
   # avoid modifying by reference
-  my @int      = @$intOriginal;
   my @ampInput = @$ampInputOriginal;
 
   my $diagnosticOutput = "";
 
-  my $i=0;
+  my $i=$$amp{pointer};
   my $numInstructions = 0;
-  while($i < @int){
+  while($i < $$amp{numints}){
     #note join(",", "pointer: $i ",@int);
     if(++$numInstructions > 99999){
       BAIL_OUT("ERROR: number of instructions went to $numInstructions with input ".join(",",@$ampInputOriginal));
     }
-    my $opcode = $int[$i];
+    my $opcode = $$amp{int}[$i];
     if($opcode == 99){
       last;
     }
 
     # Indexes
-    my $idx1   = $int[$i+1];
-    my $idx2   = $int[$i+2];
-    my $idxOut = $int[$i+3];
+    my $idx1   = $$amp{int}[$i+1];
+    my $idx2   = $$amp{int}[$i+2];
+    my $idxOut = $$amp{int}[$i+3];
 
     # Values
-    my $int1   = $int[$idx1] || 0;
-    my $int2   = $int[$idx2] || 0;
+    my $int1   = $$amp{int}[$idx1] || 0;
+    my $int2   = $$amp{int}[$idx2] || 0;
 
     # Watch out for immediate mode
     if($opcode > 99){
@@ -106,11 +117,11 @@ sub processIntCode{
 
     if($opcode == 1){
       my $value = $int1 + $int2;
-      $int[$idxOut] = $value;
+      $$amp{int}[$idxOut] = $value;
       $i+=4;
     } elsif($opcode == 2){
       my $value = $int1 * $int2;
-      $int[$idxOut] = $value;
+      $$amp{int}[$idxOut] = $value;
       $i+=4;
     }
     # Opcode 3 takes a single integer as input and saves
@@ -121,7 +132,7 @@ sub processIntCode{
       my $value = shift(@ampInput);
       $idxOut = $idx1;
       #note "  opcode:$opcode value:$value idxOut:$idxOut";
-      $int[$idxOut] = $value;
+      $$amp{int}[$idxOut] = $value;
       $i+=2;
     }
     # Opcode 4 outputs the value of its only parameter. 
@@ -163,9 +174,9 @@ sub processIntCode{
     # given by the third parameter. Otherwise, it stores 0.
     elsif($opcode == 7){
       if($int1 < $int2){
-        $int[$idxOut] = 1;
+        $$amp{int}[$idxOut] = 1;
       } else {
-        $int[$idxOut] = 0;
+        $$amp{int}[$idxOut] = 0;
       }
       $i+=4;
     }
@@ -174,9 +185,9 @@ sub processIntCode{
     # by the third parameter. Otherwise, it stores 0.
     elsif($opcode == 8){
       if($int1 == $int2){
-        $int[$idxOut] = 1;
+        $$amp{int}[$idxOut] = 1;
       } else {
-        $int[$idxOut] = 0;
+        $$amp{int}[$idxOut] = 0;
       }
       $i+=4;
     }
