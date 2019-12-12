@@ -1,12 +1,15 @@
 #!/usr/bin/env perl
+#
+# NOTE: set $DEBUG to 1 for verbose output
 
 use strict;
 use warnings;
-use Test::More;
+use Test::More tests=>1;
 use Data::Dumper;
 use List::Permutor;
+use List::Util qw/max/;
 
-my $DEBUG=1;
+my $DEBUG=0;
 sub note{
   if($DEBUG){
     Test::More::note(@_);
@@ -25,15 +28,13 @@ while(my $intcode = <DATA>){
   my $permutor = List::Permutor->new(@phaseOriginal);
   my $maxThrust = 0;
   while(my @phase = $permutor->next() ){
+    #note "DEBUG"; next unless("@phase" eq "9 7 8 5 6");
     my $thrust = thrustAmplifiersFeedback(\@int, \@phase);
-    ...;
-
-    if($thrust > $maxThrust){
-      $maxThrust = $thrust;
-    }
-
+    note "Phase @phase ===> $thrust";
+    $maxThrust = max($thrust, $maxThrust);
   }
   is($maxThrust, $expected, "Expected: $expected");
+  #note "DEBUG"; last;
 }
 
 # Run through one set of 5 amplifiers until "E" gets an
@@ -61,25 +62,25 @@ sub thrustAmplifiersFeedback{
   }
 
   my $input = 0;
+  my $diagnosticOutput = 0;
   my $chainOutput = -1;
   for(my $i=0;$i<@amp;$i++){
     # Get the previous amp's output as the new input.
     # If this is the first round with amp A, then the input is 0.
-    push(@{$amp[$i]{input}}, $input);
-    note "AMPLIFIER $i, p$amp[$i]{pointer}, input".join(",",@{$amp[$i]{input}});
-    my $diagnosticOutput = processIntCode($amp[$i]);
+    if(defined($input)){
+      push(@{$amp[$i]{input}}, $input);
+      note "AMPLIFIER $i, p$amp[$i]{pointer}, input".join(",",@{$amp[$i]{input}});
+      $diagnosticOutput = processIntCode($amp[$i]);
+    }
 
     if($i == @amp - 1){
-      note "$input => $diagnosticOutput";
       if(defined($diagnosticOutput)){
+        $chainOutput = $diagnosticOutput;
         $i=-1; # ie reset the loop
       }
     }
     $input = $diagnosticOutput;
   }
-  die;
-  note "Phase @phase ===> $chainOutput";
-  sleep 1;
   return $chainOutput;
 }
 
@@ -214,13 +215,14 @@ sub processIntCode{
       die "INTERNAL ERROR: unsure what to do with opcode $opcode";
     }
   }
+  note "Made it to the end of the int array - returning undef";
+  return undef;
   
   return $diagnosticOutput;
 }
 
 # three lines per test: intcode, phasing, answer.
 __DATA__
-3,26,1001,26,-4,26,3,27,1002,27,2,27,1,27,26,27,4,27,1001,28,-1,28,1005,28,6,99,0,0,5
+3,8,1001,8,10,8,105,1,0,0,21,34,51,64,81,102,183,264,345,426,99999,3,9,102,2,9,9,1001,9,4,9,4,9,99,3,9,101,4,9,9,102,5,9,9,1001,9,2,9,4,9,99,3,9,101,3,9,9,1002,9,5,9,4,9,99,3,9,102,3,9,9,101,3,9,9,1002,9,4,9,4,9,99,3,9,1002,9,3,9,1001,9,5,9,1002,9,5,9,101,3,9,9,4,9,99,3,9,102,2,9,9,4,9,3,9,101,1,9,9,4,9,3,9,1001,9,1,9,4,9,3,9,101,1,9,9,4,9,3,9,101,2,9,9,4,9,3,9,102,2,9,9,4,9,3,9,101,2,9,9,4,9,3,9,102,2,9,9,4,9,3,9,102,2,9,9,4,9,3,9,102,2,9,9,4,9,99,3,9,101,2,9,9,4,9,3,9,1001,9,1,9,4,9,3,9,1002,9,2,9,4,9,3,9,1001,9,1,9,4,9,3,9,1001,9,2,9,4,9,3,9,101,1,9,9,4,9,3,9,1002,9,2,9,4,9,3,9,102,2,9,9,4,9,3,9,1002,9,2,9,4,9,3,9,101,1,9,9,4,9,99,3,9,1002,9,2,9,4,9,3,9,102,2,9,9,4,9,3,9,102,2,9,9,4,9,3,9,101,1,9,9,4,9,3,9,101,2,9,9,4,9,3,9,101,2,9,9,4,9,3,9,1002,9,2,9,4,9,3,9,1001,9,1,9,4,9,3,9,1001,9,2,9,4,9,3,9,1002,9,2,9,4,9,99,3,9,1001,9,1,9,4,9,3,9,102,2,9,9,4,9,3,9,1002,9,2,9,4,9,3,9,101,2,9,9,4,9,3,9,101,2,9,9,4,9,3,9,1002,9,2,9,4,9,3,9,102,2,9,9,4,9,3,9,1002,9,2,9,4,9,3,9,1001,9,1,9,4,9,3,9,1001,9,1,9,4,9,99,3,9,1002,9,2,9,4,9,3,9,102,2,9,9,4,9,3,9,1001,9,2,9,4,9,3,9,101,2,9,9,4,9,3,9,102,2,9,9,4,9,3,9,1001,9,1,9,4,9,3,9,1002,9,2,9,4,9,3,9,1001,9,2,9,4,9,3,9,102,2,9,9,4,9,3,9,101,1,9,9,4,9,99
 9,8,7,6,5
-139629729
-
+54163586
