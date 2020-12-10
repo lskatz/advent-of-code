@@ -4,7 +4,6 @@ use warnings;
 use Data::Dumper;
 use Test::More tests=>2;
 use List::Util qw/max/;
-use Algorithm::Combinatorics qw/combinations/;
 use POSIX qw/floor ceil/;
 
 subtest 'sample data' => sub{
