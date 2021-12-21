@@ -7,33 +7,35 @@ use Test::More tests=>2;
 
 subtest "Test $0" => sub{
   my @data = ("forward 5", "down 5", "forward 8", "up 3", " down 8", "forward 2");
-  my $obs = move(\@data);
-  is($obs, 150, "Test");
+  my $obs = aim(\@data);
+  is($obs, 900, "Test");
 };
 
 subtest "Real $0" => sub{
   my @data = <DATA>;
-  my $obs = move(\@data);
-  is($obs, 1660158, "Real (obs: $obs)");
+  my $obs = aim(\@data);
+  is($obs, 1604592846, "Real (obs: $obs)");
 };
 
-sub move{
+sub aim{
   my($data) = @_;
 
   my($horizontal, $depth);
+  my $aim = 0;
   for(my $i=0;$i<@$data; $i+=1){
     $$data[$i] =~ s/^\s+|\s+$//g; # remove whitespace
-    my($direction, $increment) = split(/\s+/, $$data[$i]); 
-    next if(!$direction || !defined($increment));
+    my($direction, $units) = split(/\s+/, $$data[$i]); 
+    next if(!$direction || !defined($units));
 
     if($direction eq 'forward'){
-      $horizontal += $increment;
+      $horizontal += $units;
+      $depth += ($aim * $units);
     }
     elsif($direction eq 'down'){
-      $depth += $increment;
+      $aim += $units;
     }
     elsif($direction eq 'up'){
-      $depth -= $increment;
+      $aim -= $units;
     }
     else{
       die "ERROR: did not understand direction $direction";
