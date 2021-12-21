@@ -8,7 +8,8 @@ jobs:
       matrix:
         os: ['ubuntu-latest']
         perl: [ '5.32', '5.30', '5.28' ]
-    name: Perl ${{ matrix.perl }} on ${{ matrix.os }}
+        year: [ 2019, 2020, 2021 ]
+    name: Year: ${{ matrix.year }}; Perl ${{ matrix.perl }} on ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v2
       - name: Set up perl
@@ -16,6 +17,6 @@ jobs:
         with:
           perl-version: ${{ matrix.perl }}
       - run: perl -V
-      - run: cpanm --installdeps .
-      - run: prove -lv t
+      - run: cd ${{ matrix.year }} && cpanm --installdeps .
+      - run: cd ${{ matrix.year }} && prove -lv t
 
