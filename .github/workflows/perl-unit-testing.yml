@@ -12,7 +12,7 @@ jobs:
           - year: 2019
           - year: 2020
           - year: 2021
-    name: Year: ${{ matrix.year }}; Perl ${{ matrix.perl }} on ${{ matrix.os }}
+    name: Year ${{ matrix.year }}; Perl ${{ matrix.perl }} on ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v2
       - name: Set up perl
