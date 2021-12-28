@@ -14,10 +14,10 @@ jobs:
       - uses: actions/checkout@v2
       - name: Set up perl
         uses: shogo82148/actions-setup-perl@v1.14.1
-        install-modules: |
-          Statistics::Descriptive
         with:
           perl-version: ${{ matrix.perl }}
+          install-modules: |
+            Statistics::Descriptive
       - run: perl -V
       - run: cd ${{ matrix.year }} && cpanm --installdeps .
       - run: cd ${{ matrix.year }} && prove -lv t
