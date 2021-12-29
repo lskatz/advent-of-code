@@ -47,6 +47,24 @@ subtest "Test for most dangerous $0" => sub{
   is($hot, 5, "number of hot squares");
 };
 
+subtest "Real for most dangerous $0" => sub{
+  my $floor = readData($realData);
+  note formatFloor($floor);
+
+  my $hot=0;
+  for(my $row=0;$row<@$floor;$row++){
+    my @col = @{ $$floor[$row] };
+    #note "$row: ".join(" . ",@col);
+    for my $c(@col){
+      #$c // note "col undefined on row $row";
+      if($c > 1){
+        $hot++;
+      }
+    }
+  }
+  is($hot, 6267, "number of hot squares");
+};
+
 sub readData{
   my($data) = @_;
   
