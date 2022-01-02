@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 use Data::Dumper;
-use Test::More tests=>1;
+use Test::More tests=>2;
 use File::Basename qw/dirname/;
 use List::Util qw/max min/;
 
@@ -30,41 +30,96 @@ my $realData = "";
 }
 
 subtest "Test for most dangerous $0" => sub{
-  my $floor = readData($example);
-  note formatFloor($floor);
+  my $coordinates = readData($example);
 
-  my $hot=0;
-  for(my $row=0;$row<@$floor;$row++){
-    my @col = @{ $$floor[$row] };
-    # note "$row: ".join(" . ",@col);
-    for my $c(@col){
-      if($c > 1){
+  my $floor = plotFloor($coordinates);
+  note formatFloor($floor);
+  
+  my $hot = 0;
+  while(my($row, $cols) = each(%$floor)){
+    while(my($col, $count) = each(%$cols)){
+      if($count > 1){
         $hot++;
       }
     }
   }
+
   is($hot, 12, "number of hot squares");
 };
 
-exit;
-
 subtest "Real for most dangerous $0" => sub{
-  my $floor = readData($realData);
-  note formatFloor($floor);
+  my $coordinates = readData($realData);
 
-  my $hot=0;
-  for(my $row=0;$row<@$floor;$row++){
-    my @col = @{ $$floor[$row] };
-    for my $c(@col){
-      if($c > 1){
+  my $floor = plotFloor($coordinates);
+  #note formatFloor($floor);
+  
+  my $hot = 0;
+  while(my($row, $cols) = each(%$floor)){
+    while(my($col, $count) = each(%$cols)){
+      if($count > 1){
         $hot++;
       }
     }
   }
-  is($hot, 6267, "number of hot squares");
+
+  is($hot, 20196, "number of hot squares");
 };
 
 sub readData{
+  my($data) = @_;
+  my @coordinates;
+
+  # Label the coordinates of the raw string in order
+  my @coordinatesLabel = qw(x1 y1 x2 y2);
+  for my $line(split(/\n/, $data)){
+    $line =~ s/^\s+|\s+$//g; # trim
+    next if($line =~ /^$/);  # skip empty lines
+
+    # get coordinates with a split on the string
+    my %c = ();
+    $line =~ s/\s+//g; # remove all whitespace
+    my @unlabeledCoordinates = split(/,|->/, $line);
+    @c{@coordinatesLabel} = @unlabeledCoordinates;
+    $c{raw} = $line; #capture raw str for sanity
+
+    # A couple more metrics
+    $c{xDist} = $c{x2} - $c{x1};
+    $c{yDist} = $c{y2} - $c{y1};
+
+    # Use the comparison operator to figure out the step
+    $c{xStep} = $c{xDist} <=> 0;
+    $c{yStep} = $c{yDist} <=> 0;
+
+    push(@coordinates, \%c);
+  }
+  return \@coordinates;
+}
+
+sub plotFloor{
+  my($coordinates) = @_;
+
+  # plot all the lines
+  my %floor;
+  for my $c(@$coordinates){
+    my $i=$$c{y1};
+    my $j=$$c{x1};
+    my $numSquares = 0;
+    while($j != $$c{x2} || $i != $$c{y2}){
+      $floor{$i}{$j}++;
+      $i += $$c{yStep};
+      $j += $$c{xStep};
+      $numSquares++;
+    }
+    #note "$$c{raw}: $$c{x2},$$c{y2}";
+    $floor{$$c{y2}}{$$c{x2}}++;
+    $numSquares++;
+    #note "$$c{raw}: $numSquares";
+  }
+  return \%floor;
+}
+
+
+sub readDataOld{
   my($data) = @_;
   
   my @floor;
@@ -155,20 +210,29 @@ sub readData{
 sub formatFloor{
   my($floor) = @_;
 
-  # how wide is this thing
+  # find dimensions
   my $width=0;
-  for(my $i=0;$i<@$floor;$i++){
-    my $col = $$floor[$i] || next;
-    next if(!@$col);
-    if($width < @$col){
-      $width = @$col;
+  my $height=0;
+  while(my($row,$cols) = each(%$floor)){
+    while(my($col, $count) = each(%$cols)){
+      $width = max($col, $width);
+      $height= max($row, $height);
     }
   }
+  $width++;
+  $height++;
 
-  my $str;
-  for(my $i=0;$i<@$floor;$i++){
+  my $str = "    ";
+  # Number the row coordinates
+  for(0..$width-1){
+    $str .= sprintf("%02.0f ", $_);
+  }
+  $str .= "\n\n";
+
+  for(my $i=0;$i<$height;$i++){
+    $str .= sprintf("%02.0f  ", $i);
     for(my $j=0;$j<$width;$j++){
-      my $heat = $$floor[$i][$j] || 0;
+      my $heat = $$floor{$i}{$j} || 0;
       $str .= sprintf("%02.0f ", $heat);
     }
     $str.="\n";
