@@ -182,7 +182,7 @@ sub findWinningBoard{
     }
 
     # By column
-    for(my $j=0; $j<scalar(@{ $$cols[$0] }); $j++){
+    for(my $j=0; $j<scalar(@{ $$cols[0] }); $j++){
       my $numMarked = 0;
       for(my $i=0; $i<@$cols; $i++){
         my $marked = $$cols[$i][$j]{marked};

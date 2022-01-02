@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 use Data::Dumper;
-use Test::More tests=>1;
+use Test::More tests=>2;
 use File::Basename qw/dirname/;
 use List::Util qw/max min/;
 
