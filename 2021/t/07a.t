@@ -18,7 +18,7 @@ subtest "Test for crabs $0" => sub{
 
   my $minDist = ~0;
   my $minCrab = -1;
-  for my $crab(keys(%$dist)){
+  for my $crab(sort keys(%$dist)){
     if($minDist > $$dist{$crab}{_sum}){
       $minDist = $$dist{$crab}{_sum};
       $minCrab = $crab;
@@ -35,7 +35,7 @@ subtest "Real data for crabs $0" => sub{
 
   my $minDist = ~0;
   my $minCrab = -1;
-  for my $crab(keys(%$dist)){
+  for my $crab(sort keys(%$dist)){
     if($minDist > $$dist{$crab}{_sum}){
       $minDist = $$dist{$crab}{_sum};
       $minCrab = $crab;
