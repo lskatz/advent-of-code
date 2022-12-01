@@ -7,8 +7,8 @@ jobs:
     strategy:
       matrix:
         os: ['ubuntu-latest']
-        perl: [ '5.32', '5.30', '5.28' ]
-        year: [2021, 2020, 2019]
+        perl: [ '5.32' ]
+        year: [2022, 2021, 2020, 2019]
     name: Year ${{ matrix.year }}; Perl ${{ matrix.perl }} on ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v2
