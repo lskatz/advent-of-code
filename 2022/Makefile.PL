@@ -14,6 +14,7 @@ WriteMakefile(
         : () ),
     PL_FILES  => {},
     PREREQ_PM => {
+      "Array::Compare" => 0.1,
     },
     TEST_REQUIRES => {
           'Test::More'    => 1.001014,
