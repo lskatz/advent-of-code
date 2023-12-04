@@ -13,12 +13,15 @@ subtest "Test $0" => sub{
   pass("test");
 };
 
+note "Remove this line after testing";
+
 subtest "Real $0" => sub{
-  my $data = readData();
+  local $/ = undef;
+  my $data = <DATA>;
+  $data =~ s/^\s+|\s+$//g; # whitespace trim on each line
   pass("real");
 };
 
-sub readData{
-  note "TODO";
-}
+__DATA__
+Replace this line with the input data
 
