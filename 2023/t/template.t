@@ -13,7 +13,7 @@ subtest "Test $0" => sub{
   pass("test");
 };
 
-note "Remove this line after testing";
+note "Remove this line after testing"; exit;
 
 subtest "Real $0" => sub{
   local $/ = undef;
