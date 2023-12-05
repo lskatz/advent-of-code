@@ -1,0 +1,21 @@
+#!/usr/bin/env perl
+
+use strict;
+use warnings;
+use ExtUtils::MakeMaker;
+ 
+WriteMakefile(
+    NAME         => 'lskatz::adventofcode',
+    AUTHOR       => q{Lee Katz <gzu2@cdc.gov>},
+    VERSION      => '0.1',
+    ABSTRACT     => 'Lee Katz answers to adventofcode.com',
+    ( $ExtUtils::MakeMaker::VERSION >= 6.3002
+        ? ( 'LICENSE' => 'perl' )
+        : () ),
+    PL_FILES  => {},
+    PREREQ_PM => {
+    },
+    TEST_REQUIRES => {
+          'Test::More'    => 1.001014,
+    },
+);
