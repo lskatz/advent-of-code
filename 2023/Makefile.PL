@@ -14,8 +14,10 @@ WriteMakefile(
         : () ),
     PL_FILES  => {},
     PREREQ_PM => {
+      'Array::IntSpan' => "2.0",
     },
     TEST_REQUIRES => {
           'Test::More'    => 1.001014,
     },
 );
+
