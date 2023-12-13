@@ -46,7 +46,7 @@ humidity-to-location map:
 
   my ($seeds, $links, $map, $backMap, $backLinks) = makeMap($data);
   #my $locations = seedsToLocations($seeds, $links, $map);
-  my $minLocation = findFirstSeedByLocation($seeds, $backLinks, $backMap);
+  my $minLocation = findFirstSeedByLocation(1, $seeds, $backLinks, $backMap);
 
   is($minLocation, 46, "min location by rev lookup");
   #is(min(@$locations), 46, "min location");
@@ -58,12 +58,13 @@ subtest "Real $0" => sub{
   $data =~ s/^\s+|\s+$//g; # whitespace trim on each line
 
   my ($seeds, $links, $map, $backMap, $backLinks) = makeMap($data);
-  my $minLocation = findFirstSeedByLocation($seeds, $backLinks, $backMap);
-  is($minLocation, 27992443, "min location by rev lookup");
+  my $exp = 27992443;
+  my $minLocation = findFirstSeedByLocation($exp-1, $seeds, $backLinks, $backMap);
+  is($minLocation, $exp, "min location by rev lookup");
 };
 
 sub findFirstSeedByLocation{
-  my($seeds, $backLinks, $backMap) = @_;
+  my($startLoc, $seeds, $backLinks, $backMap) = @_;
 
   # $cache{source}{int} => int2
   #my %cache;
@@ -72,7 +73,7 @@ sub findFirstSeedByLocation{
   # and so I'll use that
   # I cheated by using another script to find my answer and so I'll use that instead.
   my $maxLoc = 27992443;
-  for(my $loc=1; $loc <= $maxLoc; $loc++){
+  for(my $loc=$startLoc; $loc <= $maxLoc; $loc++){
     if($loc % 1e6 == 0){
       note "LOC $loc";
     }
