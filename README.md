@@ -9,7 +9,7 @@ These are the solutions for Advent of Code by @lskatz
 | [2015](/2015/t) | <https://adventofcode.com/2015> |
 | 2016 | <https://adventofcode.com/2016> |
 | 2017 | <https://adventofcode.com/2017> |
-| [2018](/2018/t) | <https://adventofcode.com/2018> |
+| [2018](/2018) | <https://adventofcode.com/2018> |
 | [2019](/2019/t) | <https://adventofcode.com/2019> |
 | [2020](/2020/t) | <https://adventofcode.com/2020> |
 | [2021](/2021/t) | <https://adventofcode.com/2021> |
