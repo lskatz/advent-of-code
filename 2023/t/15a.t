@@ -20,8 +20,9 @@ HASH,rn=1,cm-,qp=3,cm=2,qp-,pc=4,ot=9,ab=5,pc-,pc=6,ot=7
 
   my $hashes = aocSums($data);
 
+  my $obsHash = shift(@$hashes);
   my $expHASH = 52;
-  is(shift(@$hashes), 52, "hash of HASH");
+  is($obsHash, 52, "hash of HASH");
 
   is_deeply($hashes, \@exp, "individual hashes");
 
